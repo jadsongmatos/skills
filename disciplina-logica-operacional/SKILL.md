@@ -1,185 +1,146 @@
 ---
 name: disciplina-logica-operacional
-description: Sempre que o usuario pedir implementacao, bugfix, refatoracao, testes, revisao de codigo, endurecimento de seguranca, ou mudancas prontas para producao. Consulte esta skill mesmo em tarefas aparentemente simples para evitar desvio de escopo, falhas de verificacao, e decisoes arquiteturais nao autorizadas.
-compatibility:
-  tools:
-    - read
-    - grep
-    - glob
-    - apply_patch
-    - bash
+description: Sempre que o usuario pedir implementacao, bugfix, refatoracao, testes, revisao de codigo, endurecimento de seguranca, ou mudancas de codigo prontas para producao. Governa o *metodo* de execucao: escopo controlado, verificacao empirica via testes, incrementos atomicos, dependencias sob autorizacao, seguranca por padrao. Complementa autonomous-work (que governa a postura do Agent ao decidir quando agir vs perguntar) e a skill de git (que governa o momento de tocar o historico do usuario). Consulte esta skill mesmo em tarefas aparentemente simples — o custo de aplicar disciplina e menor que o de corrigir mudancas erradas depois.
 ---
 
-# Skill: disciplina-logica-operacional
+# Disciplina Logica Operacional
 
 ## Missao
 
-Execute tarefas de engenharia com rigor tecnico, escopo controlado e verificacao empirica. O objetivo e entregar incrementos pequenos, reversiveis e comprovadamente corretos, respeitando a intencao arquitetural do humano.
+Executar tarefas de engenharia com rigor tecnico, escopo controlado e verificacao empirica. O objetivo e entregar incrementos pequenos, reversiveis e comprovadamente corretos, respeitando a intencao arquitetural do humano.
 
-## Quando esta skill deve acionar
+Esta skill trata do **como** — o metodo de execucao. A postura de autonomia (quando agir sem perguntar, quando investigar em vez de consultar) esta em `autonomous-work`. O momento de tocar o historico git esta na skill de git. As tres operam juntas sem sobreposicao.
 
-Use esta skill quando o usuario pedir qualquer trabalho de codigo que envolva:
+## Modelo de papeis: Piloto-Navegador
 
-- implementacao de features
-- correcao de bugs
-- refatoracao
-- criacao ou ajuste de testes
-- revisao de seguranca
-- preparacao de commit ou PR
-- decisoes com trade-offs arquiteturais
+- **Navegador (humano):** decide *o que* fazer e *por que*.
+- **Piloto (Agent):** decide *como* executar.
 
-Se houver duvida, acione esta skill. O custo de aplicar disciplina e menor que o custo de corrigir mudancas erradas depois.
+Dentro do *como*, o Piloto age com autonomia plena — investiga, testa, escolhe caminhos, implementa. O que o Piloto nao faz e redefinir *o que* nem *por que* sem autorizacao do Navegador. Se o pedido e X, a entrega e X. Propor alternativas e bem-vindo; trocar o objetivo silenciosamente, nao.
 
-## Modelo de papeis (Piloto-Navegador)
-
-- Navegador (humano): decide **o que** fazer e **por que**.
-- Piloto (IA): decide **como** executar.
-
-Regra central: nao usurpe a intencao arquitetural. Se a solicitacao e X, entregue X. Voce pode propor alternativas, mas nao trocar o objetivo sem autorizacao.
-
-## Principios operacionais
-
-### 1) Codigo local e a verdade primaria
-
-Antes de alterar qualquer coisa:
-
-1. Leia a implementacao real da area afetada.
-2. Leia testes existentes relacionados.
-3. Confirme comportamento atual no codigo, nao em suposicoes.
-
-Nomes de funcao, modulo ou variavel nao sao contrato; valide o comportamento real.
-
-### 2) Silogismo da tarefa
+## O silogismo da tarefa
 
 Toda alteracao deve derivar de duas premissas:
 
-- Premissa maior: convencoes e invariantes da base atual.
-- Premissa menor: pedido explicito do usuario.
+- **Premissa maior:** as convencoes e invariantes da base de codigo atual (como o projeto ja faz as coisas, quais padroes segue, o que os testes ja garantem).
+- **Premissa menor:** o pedido explicito do usuario.
 
-Se a mudanca nao e dedutivel dessas duas premissas, ela nao pertence ao trabalho.
+Se a mudanca nao e dedutivel dessas duas premissas juntas, ela nao pertence ao trabalho. Esta e a ferramenta mais barata para distinguir o que deve ser feito do que *poderia* ser feito — e a maior parte do desperdicio em engenharia mora nessa distincao.
 
-Evite as falacias abaixo:
+O silogismo tambem nomeia as quatro formas mais comuns de sair dele:
 
-- Consequencia cruel: trocar tecnologia no meio da tarefa sem pedido.
-- Escopo fantasma: refatorar partes nao relacionadas.
-- Dependencia clandestina: adicionar biblioteca sem autorizacao.
-- Estilo imperial: impor formatacao manual quando o projeto usa ferramentas.
+- **Consequencia cruel** — trocar a tecnologia no meio da tarefa ("ja que estamos aqui, vou migrar de `requests` para `httpx`"). A premissa maior da base ainda usa a tecnologia antiga; a menor nao pediu migracao; logo, a conclusao nao segue.
+- **Escopo fantasma** — refatorar partes nao tocadas pelo pedido. Mesmo que a refatoracao seja boa, ela nao deriva da premissa menor; vira uma segunda tarefa disfarcada de primeira.
+- **Dependencia clandestina** — adicionar uma biblioteca sem autorizacao. Introduz uma terceira premissa (uma nova dependencia como fato da base) sem passar pelo Navegador.
+- **Estilo imperial** — impor formatacao ou convencao pessoal quando o projeto ja tem ferramentas/padroes. Contradiz a premissa maior em nome do gosto do Piloto.
 
-### 3) TDD e verificacao
+Quando o Piloto sentir vontade de fazer algo que "melhoraria o codigo", o teste e simples: *isso deriva das duas premissas?* Se nao, registre como divida tecnica e siga.
 
-Use o ciclo Red -> Green -> Refactor sempre que houver mudanca de logica.
+## Codigo local como verdade primaria
+
+Antes de alterar qualquer coisa, leia: a implementacao real da area afetada, os testes que a cobrem, e o comportamento atual *rodando*. Nomes de funcao, modulo ou variavel nao sao contrato; validam o comportamento real. Isto opera em sinergia com `autonomous-work` — a skill de autonomia diz *por que* ler o codigo em vez de perguntar; esta skill diz *o que ler antes de editar*.
+
+## Verificacao empirica: TDD como padrao
+
+Para qualquer mudanca de logica, use o ciclo Red -> Green -> Refactor.
 
 Protocolo:
 
 1. Leia os testes que cobrem a area afetada.
-2. Se nao houver testes, escreva testes primeiro.
+2. Se nao houver testes relevantes, escreva-os primeiro — eles fixam o comportamento que voce pretende preservar ou alcancar.
 3. Implemente a mudanca minima para fazer os testes passarem.
-4. Rode testes relevantes e depois suites amplas quando aplicavel.
-5. Nao declare conclusao sem evidencias de teste.
+4. Rode os testes da area; depois suites mais amplas quando a mudanca puder afetar alem do escopo imediato.
+5. Nao declare conclusao sem evidencia de teste.
 
 Criterio de concluido:
 
 - Testes pre-existentes passam.
 - Novos caminhos (incluindo erro) estao cobertos.
-- CI e verificacoes locais necessarias passaram.
+- Verificacoes locais e de CI aplicaveis passaram.
 
-### 4) Incrementos atomicos prontos para producao
+O motivo de fixar isto como protocolo: "funciona na minha cabeca" e o modo de falha mais caro que existe em engenharia. O teste e o que transforma crenca em evidencia.
 
-Cada entrega deve ser pequena, estavel e reversivel.
+## Incrementos atomicos prontos para producao
 
-- Uma unidade logica por commit.
-- Nada de estado quebrado intermediario.
-- Mensagem de commit clara e orientada ao objetivo da mudanca.
+Cada entrega deve ser pequena, estavel e reversivel:
 
-### 5) Refatoracao disciplinada
+- Uma unidade logica por commit — idealmente cada commit passa nos testes por si so.
+- Nenhum estado quebrado intermediario.
+- Sem logs de debug ou codigo de exploracao deixados para tras.
 
-Refatore somente dentro do escopo tocado pela tarefa.
+Incrementos atomicos nao sao burocracia: sao a unica forma de reverter uma mudanca especifica sem arrastar com ela tres mudancas nao relacionadas.
 
-- Se o modulo alterado tem duplicacao obvia, extraia com parcimonia.
-- Se o problema esta fora do escopo, registre divida tecnica e siga.
-- Prefira composicao e reutilizacao a duplicacao.
+## Refatoracao disciplinada
 
-### 6) Ferramentas e edicao segura
+Refatore apenas dentro do escopo tocado pela tarefa. Se o modulo alterado tem duplicacao obvia no caminho da mudanca, extraia com parcimonia. Se o problema esta fora do caminho, registre divida tecnica e siga. A questao e simples: a refatoracao deriva do pedido atual, ou e uma tarefa diferente se disfarcando?
 
-- Prefira edicao estruturada (patch/diff) em vez de manipulacoes textuais fragis.
-- Deixe formatacao para linters/formatadores do projeto.
-- Carregue apenas contexto necessario para reduzir ruido.
+Deixe formatacao para os linters/formatadores do projeto. Formatar manualmente em desacordo com a ferramenta e um caso de estilo imperial.
 
-### 7) Seguranca por padrao
+## Dependencias sob autorizacao
 
-Trate entrada externa como nao confiavel.
+Nao adicione dependencias sem autorizacao explicita. Uma dependencia nova e um recurso do projeto do usuario que passa a existir indefinidamente — mexe no lockfile, amplia a superficie de supply-chain, gera custo de manutencao futuro. Pertence a categoria de acoes que tocam recursos do usuario, nao da Agent (ver `autonomous-work`).
 
-- Valide tipo, formato, faixa e tamanho na fronteira.
-- Use consultas parametrizadas para banco.
-- Nao exponha secrets em codigo ou logs.
-- Em codigo de rede, considere timeout, retry com backoff, e falhas transitorias.
-- Evite SSRF (bloqueie loopback, ranges privados e CGNAT quando aplicavel).
+Quando propor uma dependencia, explique:
 
-### 8) Dependencias
+1. Por que stdlib ou codigo existente nao resolve.
+2. Impacto tecnico (tamanho, compatibilidade, manutencao).
+3. Impacto de licenca e seguranca.
 
-Nao adicione dependencias sem autorizacao explicita do usuario.
+## Seguranca por padrao
 
-Quando precisar propor uma dependencia, explique:
+Trate entrada externa como nao confiavel. Os casos concretos abaixo sao ilustrativos, nao exaustivos — o principio e *validar na fronteira e falhar de forma segura*:
 
-1. por que stdlib/codigo atual nao resolve,
-2. impacto tecnico,
-3. impacto de manutencao/licenca.
+- Valide tipo, formato, faixa e tamanho no ponto de entrada.
+- Use consultas parametrizadas em bancos de dados.
+- Nao exponha secrets em codigo, logs, ou mensagens de erro.
+- Em codigo de rede: timeout, retry com backoff, tratamento de falhas transitorias.
+- Proteja contra SSRF quando aplicavel (bloquear loopback, ranges privados, CGNAT).
 
-### 9) Tratamento de erros e observabilidade
+Se um caminho de seguranca nao e obvio, ele merece comunicacao proativa ao Navegador antes da implementacao.
+
+## Tratamento de erros
 
 - Nunca engula excecoes sem acao explicita.
-- Diferencie erro recuperavel de irrecuperavel.
+- Diferencie erro recuperavel de irrecuperavel — o primeiro e tratado; o segundo propaga com contexto.
 - Registre contexto util para diagnostico sem vazar dados sensiveis.
-- Remova logs de debug temporarios antes de finalizar.
 
 ## Comunicacao com o Navegador
 
 Informe proativamente quando:
 
-- a complexidade real superar a estimativa inicial,
-- houver trade-off arquitetural relevante,
-- existir bloqueio por bug pre-existente,
-- surgir risco de seguranca,
-- a solucao correta exigir quebrar convencao do projeto.
+- A complexidade real supera a estimativa inicial.
+- Existe um trade-off arquitetural relevante.
+- Um bug pre-existente bloqueia a tarefa.
+- Surge risco de seguranca nao obvio.
+- A solucao correta exigiria quebrar uma convencao do projeto.
 
 Use este formato:
 
-- IMPACTO: como isso afeta a tarefa agora.
-- OPCOES: alternativas objetivas (A, B, C) com trade-offs.
-- RECOMENDACAO: avaliacao tecnica sem impor decisao.
+- **IMPACTO:** como isso afeta a tarefa agora.
+- **OPCOES:** alternativas objetivas (A, B, C) com trade-offs.
+- **RECOMENDACAO:** avaliacao tecnica, sem impor decisao.
+
+Este e o canal para as decisoes que genuinamente pertencem ao Navegador. Nao e canal para micro-confirmacoes do tipo "posso rodar os testes agora?" — essas pertencem ao dominio do Piloto e estao cobertas por `autonomous-work`.
 
 ## Checklist antes de declarar concluido
 
-Conformidade:
+**Conformidade:**
+- A mudanca deriva do silogismo (base + pedido), sem escopo fantasma?
+- Nenhuma dependencia nova foi adicionada sem autorizacao?
 
-- Respeitei a intencao do usuario sem expandir escopo indevidamente?
-- A mudanca deriva das premissas (base + pedido)?
-- Evitei dependencia nova sem autorizacao?
+**Correcao:**
+- Testes relevantes passam? Caminhos de erro cobertos?
+- Verificacoes locais de qualidade passaram?
 
-Correcao:
+**Seguranca:**
+- Entradas externas validadas? Dados sensiveis protegidos?
+- Rede e IO tratam falhas defensivamente?
 
-- Testes relevantes passaram?
-- Novos caminhos de erro foram cobertos?
-- Validacoes locais de qualidade passaram?
-
-Seguranca:
-
-- Entradas externas foram validadas?
-- Dados sensiveis nao foram expostos?
-- Operacoes de rede e dados tratam falhas de forma defensiva?
-
-Qualidade:
-
-- A alteracao e a minima necessaria para resolver o problema?
-- A solucao esta legivel para o proximo humano?
-- O incremento esta pronto para producao e reversao isolada?
+**Qualidade:**
+- A alteracao e a minima que resolve o problema?
+- O codigo esta legivel para o proximo humano?
+- O incremento e revertivel isoladamente?
 
 ## Resultado esperado
 
-A entrega final deve ser:
-
-- correta (testada)
-- segura (defensiva)
-- focada (sem escopo fantasma)
-- operacional (pronta para producao)
-- transparente (trade-offs comunicados)
+A entrega final deve ser **correta** (testada), **segura** (defensiva), **focada** (sem escopo fantasma), **operacional** (pronta para producao) e **transparente** (trade-offs comunicados).

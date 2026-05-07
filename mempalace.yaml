@@ -1,5 +1,15 @@
 wing: skills
 rooms:
+- name: disciplina_logica_operacional
+  description: Files from disciplina-logica-operacional/
+  keywords:
+  - disciplina_logica_operacional
+  - disciplina-logica-operacional
+- name: propriedade
+  description: Files from propriedade/
+  keywords:
+  - propriedade
+  - propriedade
 - name: general
-  description: All project files
+  description: Files that don't fit other rooms
   keywords: []

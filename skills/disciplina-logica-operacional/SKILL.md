@@ -1,6 +1,6 @@
 ---
 name: disciplina-logica-operacional
-description: Sempre que o usuario pedir implementacao, bugfix, refatoracao, testes, revisao de codigo, endurecimento de seguranca, ou mudancas de codigo prontas para producao. Governa o *metodo* de execucao: escopo controlado, verificacao empirica via testes, incrementos atomicos, dependencias sob autorizacao, seguranca por padrao. Complementa autonomous-work (que governa a postura do Agent ao decidir quando agir vs perguntar) e a skill de git (que governa o momento de tocar o historico do usuario). Consulte esta skill mesmo em tarefas aparentemente simples — o custo de aplicar disciplina e menor que o de corrigir mudancas erradas depois.
+description: "Sempre que o usuario pedir implementacao, bugfix, refatoracao, testes, revisao de codigo, endurecimento de seguranca, ou mudancas de codigo prontas para producao. Governa o metodo de execucao: escopo controlado, verificacao empirica via testes, incrementos atomicos, dependencias sob autorizacao, seguranca por padrao. Complementa autonomous-work (que governa a postura do Agent ao decidir quando agir vs perguntar) e a skill de git (que governa o momento de tocar o historico do usuario). Consulte esta skill mesmo em tarefas aparentemente simples — o custo de aplicar disciplina e menor que o de corrigir mudancas erradas depois."
 ---
 
 # Disciplina Logica Operacional
